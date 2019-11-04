@@ -6,7 +6,7 @@
 #include <Hash.h>
 
 #define WIFI_SSID "T3"
-#define WIFI_PASS "diwana_746"
+#define WIFI_PASS "*****"
 #define RELAY_PIN D8
 
 fauxmoESP fauxmo;
