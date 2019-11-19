@@ -8,6 +8,7 @@
 #define WIFI_SSID "T3"
 #define WIFI_PASS "*****"
 #define RELAY_PIN D8
+#define FlagPin D7
 
 fauxmoESP fauxmo;
 
@@ -23,7 +24,7 @@ void wifiSetup() {
     Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
-void tog(){
+void tog(int flag){
   float elapsedTime = 0;
   float oldTime = 0;
   Serial.println("Toggle");
@@ -34,22 +35,40 @@ void tog(){
     elapsedTime = millis() - oldTime;
   }
   digitalWrite(RELAY_PIN, LOW);  
-}
-
-void callback(uint8_t device_id, const char * device_name, bool state) {
-  Serial.print("Device "); Serial.println(device_name); 
-  tog();
+  if (flag == 1){
+    digitalWrite(FlagPin, HIGH);
+  }
+  else{
+    digitalWrite(FlagPin, LOW);
+  }
 }
 
 void setup() {
-    Serial.begin(9600);
-    pinMode(RELAY_PIN, OUTPUT);
-    wifiSetup();
+  Serial.begin(9600);
+  pinMode(RELAY_PIN, OUTPUT);
+  wifiSetup();
 
-    fauxmo.addDevice("Computer");
-    fauxmo.onMessage(callback);
+  fauxmo.enable(true);
+  fauxmo.addDevice("Computer");
+  fauxmo.onSetState(callbackSetState);
+  fauxmo.onGetState(callbackGetState);
 }
 
 void loop() {
   fauxmo.handle();
+}
+
+void callbackSetState(unsigned char device_id, const char * device_name, bool state) {
+  Serial.print("Device "); Serial.println(device_name); 
+  if (state) {
+    tog(1);  
+  }
+  else{
+    tog(0);
+  }
+}
+
+bool callbackGetState(unsigned char device_id, const char * device_name)
+{
+  return digitalRead(FlagPin);
 }
