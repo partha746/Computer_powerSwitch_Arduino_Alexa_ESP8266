@@ -1,27 +1,25 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
 #include "fauxmoESP.h"
 #include "ESPAsyncWebServer.h"
 #include <ESPAsyncTCP.h>
-#include <Hash.h>
 
-#define WIFI_SSID "T3"
-#define WIFI_PASS "*****"
 #define RELAY_PIN D8
 #define FlagPin D7
 
 fauxmoESP fauxmo;
+ESP8266WiFiMulti wifiMulti;
 
 void wifiSetup() {
     WiFi.mode(WIFI_STA);
-    Serial.printf("[WIFI] Connecting to %s ", WIFI_SSID);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    wifiMulti.addAP("", "");
+    wifiMulti.addAP("", "");
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
         delay(1000);
     }
     Serial.println();
-    Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+    Serial.printf("Connected to SSID: %s & IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
 void tog(int flag){
@@ -37,9 +35,11 @@ void tog(int flag){
   digitalWrite(RELAY_PIN, LOW);  
   if (flag == 1){
     digitalWrite(FlagPin, HIGH);
+    Serial.println("ON");
   }
   else{
     digitalWrite(FlagPin, LOW);
+    Serial.println("OFF");
   }
 }
 
