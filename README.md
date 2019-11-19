@@ -1,1 +1,1 @@
-User Fauxmo 2.3.0
+Use Fauxmo 2.3.0
