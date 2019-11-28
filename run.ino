@@ -1,74 +1,75 @@
-#include <Arduino.h>
-#include <ESP8266WiFiMulti.h>
-#include "fauxmoESP.h"
-#include "ESPAsyncWebServer.h"
-#include <ESPAsyncTCP.h>
+#include <BlockDriver.h>
+#include <SdFatConfig.h>
+#include <SdFat.h>
+#include <MinimumSerial.h>
+#include <SysCall.h>
+#include <sdios.h>
+#include <FreeStack.h>
 
-#define RELAY_PIN D8
-#define FlagPin D7
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include "fauxmoESP.h"
+#include "credentials.h"
 
 fauxmoESP fauxmo;
-ESP8266WiFiMulti wifiMulti;
+
+#define Relay D0
+#define ID_Relay "Computer"
 
 void wifiSetup() {
     WiFi.mode(WIFI_STA);
-    wifiMulti.addAP("", "");
-    wifiMulti.addAP("", "");
+    Serial.printf("[WIFI] Connecting to %s ", WIFI_SSID);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
-        delay(1000);
+        delay(500);
     }
     Serial.println();
-    Serial.printf("Connected to SSID: %s & IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+    Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
-void tog(int flag){
+void tog(){
   float elapsedTime = 0;
   float oldTime = 0;
   Serial.println("Toggle");
   oldTime = millis();
   
-  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(Relay, LOW);
   while (elapsedTime < 700){
     elapsedTime = millis() - oldTime;
   }
-  digitalWrite(RELAY_PIN, LOW);  
-  if (flag == 1){
-    digitalWrite(FlagPin, HIGH);
-    Serial.println("ON");
-  }
-  else{
-    digitalWrite(FlagPin, LOW);
-    Serial.println("OFF");
-  }
+  digitalWrite(Relay, HIGH);  
 }
 
 void setup() {
-  Serial.begin(9600);
-  pinMode(RELAY_PIN, OUTPUT);
-  wifiSetup();
+    Serial.begin(9600);
+    Serial.println();
 
-  fauxmo.enable(true);
-  fauxmo.addDevice("Computer");
-  fauxmo.onSetState(callbackSetState);
-  fauxmo.onGetState(callbackGetState);
+    pinMode(Relay, OUTPUT);
+    digitalWrite(Relay, HIGH);
+
+    wifiSetup();
+
+    fauxmo.createServer(true);
+    fauxmo.setPort(80);
+
+    fauxmo.enable(true);
+
+    fauxmo.addDevice(ID_Relay);
+
+    fauxmo.onSetState([](unsigned char device_id, const char * device_name, bool state, unsigned char value) {
+        Serial.printf("[MAIN] Device #%d (%s) state: %s value: %d\n", device_id, device_name, state ? "ON" : "OFF", value);
+        if (strcmp(device_name, ID_Relay)==0) {
+            if(state){
+              tog();
+            }
+            else{
+              tog();
+            }          
+        }
+    });
 }
 
 void loop() {
-  fauxmo.handle();
-}
-
-void callbackSetState(unsigned char device_id, const char * device_name, bool state) {
-  Serial.print("Device "); Serial.println(device_name); 
-  if (state) {
-    tog(1);  
-  }
-  else{
-    tog(0);
-  }
-}
-
-bool callbackGetState(unsigned char device_id, const char * device_name)
-{
-  return digitalRead(FlagPin);
+    fauxmo.handle();
 }
